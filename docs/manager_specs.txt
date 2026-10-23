@@ -1,0 +1,67 @@
+== hostname ==
+fedora
+== kernel ==
+Linux fedora 7.2.11-200.fc44.x86_64 #1 SMP PREEMPT_DYNAMIC Thu Oct 15 15:58:58 UTC 2026 x86_64 GNU/Linux
+== OS ==
+NAME="Fedora Linux"
+VERSION="44 (KDE Plasma Desktop Edition)"
+RELEASE_TYPE=stable
+ID=fedora
+== virtualización ==
+none
+== CPU ==
+8
+Model name:                              Intel(R) Core(TM) i5-8365U CPU @ 1.60GHz
+Thread(s) per core:                      2
+Core(s) per socket:                      4
+Socket(s):                               1
+== RAM ==
+               total        used        free      shared  buff/cache   available
+Mem:            15Gi       7,1Gi       4,3Gi       935Mi       5,3Gi       8,3Gi
+Swap:          8,0Gi        15Mi       8,0Gi
+== Disco / ==
+S.ficheros     Tamaño Usados  Disp Uso% Montado en
+/dev/nvme0n1p3   236G    84G  151G  36% /
+S.ficheros     Tamaño Usados  Disp Uso% Montado en
+/dev/nvme0n1p3   236G    84G  151G  36% /
+== docker version ==
+29.9.2
+== docker info (extracto) ==
+ Storage Driver: overlayfs
+ Cgroup Driver: systemd
+ Cgroup Version: 2
+ Swarm: inactive
+ Default Runtime: runc
+ Kernel Version: 7.2.11-200.fc44.x86_64
+ Operating System: Fedora Linux 44 (KDE Plasma Desktop Edition)
+ CPUs: 8
+ Total Memory: 15.36GiB
+== usuario en grupo docker ==
+docker
+== interfaces ==
+lo               UNKNOWN        127.0.0.1/8 ::1/128 
+enp0s31f6        UP             192.168.101.117/24 2806:2f0:8081:fc63:6840:425a:6527:67d4/64 fe80::489b:d722:507f:713e/64 
+wlp0s20f3        DOWN           
+docker0          DOWN           172.17.0.1/16 
+br-51a35cf5361c  DOWN           172.22.0.1/16 
+br-584f5db47357  DOWN           172.20.0.1/16 
+br-9debc044e4c6  DOWN           172.21.0.1/16 
+br-e86486b0cc7a  DOWN           172.18.0.1/16 
+br-fabc65fb8ee0  DOWN           172.31.0.1/24 
+br-037f060d6e0d  DOWN           172.30.0.1/24 
+br-0fcba4a0f354  DOWN           172.19.0.1/16 
+== ruta por defecto ==
+default via 192.168.101.1 dev enp0s31f6 proto dhcp src 192.168.101.117 metric 100 
+== resolución entre hosts (ajusta nombres) ==
+sin DNS interno
+== NTP ==
+                Time zone: America/Cancun (EST, -0500)
+System clock synchronized: yes
+              NTP service: active
+== chrony/timesyncd ==
+inactive
+inactive
+== firewall ==
+running
+== puertos swarm (vacíos si libres) ==
+libres

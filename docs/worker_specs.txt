@@ -1,0 +1,64 @@
+== hostname ==
+debian
+== kernel ==
+Linux debian 6.12.113+deb13-amd64 #1 SMP PREEMPT_DYNAMIC Debian 6.12.113-1 (2026-10-15) x86_64 GNU/Linux
+== OS ==
+PRETTY_NAME="Debian GNU/Linux 13 (trixie)"
+NAME="Debian GNU/Linux"
+VERSION_ID="13"
+VERSION="13 (trixie)"
+== virtualización ==
+none
+== CPU ==
+8
+Nombre del modelo:                        11th Gen Intel(R) Core(TM) i5-1135G7 @ 2.40GHz
+«Socket(s)»:                              1
+== RAM ==
+               total       usado       libre  compartido   búf/caché  disponible
+Mem:            15Gi       5.2Gi       8.5Gi       755Mi       2.8Gi        10Gi
+Inter:          23Gi          0B        23Gi
+== Disco / ==
+S.ficheros     Tamaño Usados  Disp Uso% Montado en
+/dev/sda2        416G    13G  382G   4% /
+S.ficheros     Tamaño Usados  Disp Uso% Montado en
+/dev/sda2        416G    13G  382G   4% /
+== docker version ==
+29.9.2
+== docker info (extracto) ==
+ Storage Driver: overlayfs
+ Cgroup Driver: systemd
+ Cgroup Version: 2
+ Swarm: inactive
+ Default Runtime: runc
+ Kernel Version: 6.12.113+deb13-amd64
+ Operating System: Debian GNU/Linux 13 (trixie)
+ CPUs: 8
+ Total Memory: 15.37GiB
+== usuario en grupo docker ==
+docker
+== interfaces ==
+lo               UNKNOWN        127.0.0.1/8 ::1/128 
+wlp1s0           UP             192.168.0.136/24 2806:250:c0c:bc65::158a/128 2806:250:c0c:bc65:8667:ed66:1d7d:e4a6/64 fe80::6607:e124:dfd7:48c0/64 
+docker0          DOWN           172.17.0.1/16 
+== ruta por defecto ==
+default via 192.168.0.1 dev wlp1s0 proto dhcp src 192.168.0.136 metric 600 
+== resolución entre hosts (ajusta nombres) ==
+sin DNS interno
+== NTP ==
+ 
+Warning: The system is configured to read the RTC time in the local time zone.
+         This mode cannot be fully supported. It will create various problems
+         with time zone changes and daylight saving time adjustments. The RTC
+         time is never updated, it relies on external facilities to maintain it.
+         If at all possible, use RTC in UTC by calling
+         'timedatectl set-local-rtc 0'.
+                Time zone: America/Cancun (EST, -0500)
+System clock synchronized: yes
+              NTP service: active
+== chrony/timesyncd ==
+inactive
+active
+== firewall ==
+sin ufw/firewalld detectado
+== puertos swarm (vacíos si libres) ==
+libres
