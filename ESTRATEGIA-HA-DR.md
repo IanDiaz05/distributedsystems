@@ -16,6 +16,16 @@ para todos los datos.
 
 ## Resumen del proyecto actual
 
+**Actualización de implementación:** los puntos ToDo 2.1–2.3 y 3 se han
+implementado en Compose: MongoDB de tres miembros, Redis con Sentinel y cache
+descartable, y `galera-proxy` para API/inicialización. Véase [DATA-HA.md](./DATA-HA.md).
+Las pruebas reales de elección/failover siguen pendientes. Las limitaciones
+de acceso directo a galera1 y de instancias únicas de MongoDB/Redis descritas
+a continuación corresponden al estado anterior que motivó este plan. El proxy
+SQL, el ingreso y el host siguen siendo puntos únicos. Las propuestas Swarm,
+backups, mínimos privilegios y observabilidad de este documento no se consideran
+implementadas por este cambio.
+
 La aplicación ofrece un catálogo estático servido por Nginx, una API Node.js,
 MariaDB Galera para el catálogo, MongoDB para reseñas y Redis para cache. Hay
 varios Nginx, API y HAProxy, dos pares Keepalived, Nagios y un laboratorio de

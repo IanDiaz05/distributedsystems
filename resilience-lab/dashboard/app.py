@@ -74,7 +74,7 @@ TOOLS = {
                     "Expect availability near 100% for redundant groups; compare Longest outage with the Keepalived/health-check timers.",
                     "All targets are restored automatically at the end or when stopped."],
         "fields": [F("GROUP", "Target group", "web", "select",
-                     options=["web", "app", "presentation-lb", "application-lb", "galera", "redis", "mongodb", "any"]),
+                     options=["web", "app", "presentation-lb", "application-lb", "galera", "redis", "redis-sentinel", "mongodb", "any"]),
                    F("TARGETS", "Explicit services (comma separated, overrides group)", "", "text", required=False),
                    F("ACTION", "Fault", "stop", "select", options=["stop", "kill", "pause"]),
                    F("INTERVAL", "Seconds between faults", 20, "number", min=1, max=3600),

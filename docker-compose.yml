@@ -183,18 +183,21 @@ services:
   app1:
     build: ./application
     environment: &application-environment
-      DB_HOST: galera1
+      DB_HOST: galera-proxy
       DB_PORT: 3306
+      DB_POOL_LIMIT: ${DB_POOL_LIMIT:-10}
+      DB_QUEUE_LIMIT: ${DB_QUEUE_LIMIT:-20}
+      DB_CONNECT_TIMEOUT_MS: ${DB_CONNECT_TIMEOUT_MS:-3000}
       DB_NAME: ${CATALOG_DB_NAME:?Set CATALOG_DB_NAME in .env}
       DB_USER: ${CATALOG_DB_USER:?Set CATALOG_DB_USER in .env}
       DB_PASSWORD: ${CATALOG_DB_PASSWORD:?Set CATALOG_DB_PASSWORD in .env}
-      MONGO_HOST: mongodb
-      MONGO_PORT: 27017
+      MONGO_HOSTS: mongodb:27017,mongodb2:27017,mongodb3:27017
+      MONGO_REPLICA_SET: store-rs
       MONGO_DB: ${MONGO_DB_NAME:?Set MONGO_DB_NAME in .env}
       MONGO_USER: ${MONGO_ROOT_USERNAME:?Set MONGO_ROOT_USERNAME in .env}
       MONGO_PASSWORD: ${MONGO_ROOT_PASSWORD:?Set MONGO_ROOT_PASSWORD in .env}
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
+      REDIS_SENTINELS: redis-sentinel1:26379,redis-sentinel2:26379,redis-sentinel3:26379
+      REDIS_MASTER_NAME: catalog-cache
       APPLICATION_NODE: app1
     restart: unless-stopped
     depends_on:
@@ -238,27 +241,48 @@ services:
       - ./database/catalog.sql:/app/database/catalog.sql:ro
     restart: "no"
     depends_on:
-      galera1:
-        condition: service_healthy
-      mongodb:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
+      galera-proxy:
+        condition: service_started
+      mongodb-init:
+        condition: service_completed_successfully
     networks:
       - database
 
-  mongodb:
+  mongodb-keyfile:
     image: mongo:8
-    environment:
+    entrypoint: ["bash", "-ec"]
+    command:
+      - |
+        if [ ! -s /keys/keyfile ]; then
+          umask 077
+          openssl rand -base64 756 > /keys/keyfile.tmp
+          mv /keys/keyfile.tmp /keys/keyfile
+        fi
+        chown mongodb:mongodb /keys/keyfile
+        chmod 0400 /keys/keyfile
+    volumes:
+      - mongodb-keyfile:/keys
+    restart: "no"
+    network_mode: none
+
+  mongodb: &mongodb-node
+    image: mongo:8
+    command: ["mongod", "--replSet", "store-rs", "--keyFile", "/keys/keyfile", "--bind_ip_all"]
+    restart: unless-stopped
+    environment: &mongodb-environment
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME:?Set MONGO_ROOT_USERNAME in .env}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:?Set MONGO_ROOT_PASSWORD in .env}
     volumes:
       - mongodb-data:/data/db
+      - mongodb-keyfile:/keys:ro
+    depends_on:
+      mongodb-keyfile:
+        condition: service_completed_successfully
     healthcheck:
       test:
         [
           "CMD-SHELL",
-          "mongosh --quiet --username \"$${MONGO_INITDB_ROOT_USERNAME}\" --password \"$${MONGO_INITDB_ROOT_PASSWORD}\" --authenticationDatabase admin --eval 'db.adminCommand({ ping: 1 }).ok' | grep 1",
+          "mongosh --quiet --eval 'const a=db.getSiblingDB(\"admin\"); a.auth(process.env.MONGO_INITDB_ROOT_USERNAME,process.env.MONGO_INITDB_ROOT_PASSWORD); quit(a.runCommand({ping:1}).ok === 1 ? 0 : 1)'",
         ]
       interval: 10s
       timeout: 5s
@@ -267,13 +291,125 @@ services:
     networks:
       - database
 
-  redis:
+  mongodb2:
+    <<: *mongodb-node
+    volumes:
+      - mongodb2-data:/data/db
+      - mongodb-keyfile:/keys:ro
+
+  mongodb3:
+    <<: *mongodb-node
+    volumes:
+      - mongodb3-data:/data/db
+      - mongodb-keyfile:/keys:ro
+
+  mongodb-init:
+    image: mongo:8
+    entrypoint: ["mongosh", "--nodb", "--quiet", "/init/init-replica.js"]
+    environment: *mongodb-environment
+    volumes:
+      - ./mongodb/init-replica.js:/init/init-replica.js:ro
+    restart: "no"
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      mongodb2:
+        condition: service_healthy
+      mongodb3:
+        condition: service_healthy
+    networks:
+      - database
+
+  redis: &redis-node
     image: redis:7-alpine
+    user: redis
+    restart: unless-stopped
+    command: ["sh", "/config/start-node.sh"]
+    environment:
+      REDIS_NODE_HOST: redis
+    volumes:
+      - ./redis/start-node.sh:/config/start-node.sh:ro
+      - redis-state:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD", "redis-cli", "-e", "ping"]
       interval: 10s
       timeout: 3s
       retries: 5
+    networks:
+      - database
+
+  redis2:
+    <<: *redis-node
+    environment:
+      REDIS_NODE_HOST: redis2
+    volumes:
+      - ./redis/start-node.sh:/config/start-node.sh:ro
+      - redis2-state:/data
+    depends_on:
+      - redis
+
+  redis3:
+    <<: *redis-node
+    environment:
+      REDIS_NODE_HOST: redis3
+    volumes:
+      - ./redis/start-node.sh:/config/start-node.sh:ro
+      - redis3-state:/data
+    depends_on:
+      - redis
+
+  redis-sentinel1: &redis-sentinel
+    image: redis:7-alpine
+    user: redis
+    restart: unless-stopped
+    command: ["sh", "/config/start-sentinel.sh"]
+    environment:
+      REDIS_SENTINEL_HOST: redis-sentinel1
+    volumes:
+      - ./redis/start-sentinel.sh:/config/start-sentinel.sh:ro
+      - redis-sentinel1-state:/data
+    depends_on:
+      - redis
+      - redis2
+      - redis3
+    healthcheck:
+      test: ["CMD", "redis-cli", "-e", "-p", "26379", "SENTINEL", "CKQUORUM", "catalog-cache"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 20s
+    networks:
+      - database
+
+  redis-sentinel2:
+    <<: *redis-sentinel
+    environment:
+      REDIS_SENTINEL_HOST: redis-sentinel2
+    volumes:
+      - ./redis/start-sentinel.sh:/config/start-sentinel.sh:ro
+      - redis-sentinel2-state:/data
+
+  redis-sentinel3:
+    <<: *redis-sentinel
+    environment:
+      REDIS_SENTINEL_HOST: redis-sentinel3
+    volumes:
+      - ./redis/start-sentinel.sh:/config/start-sentinel.sh:ro
+      - redis-sentinel3-state:/data
+
+  galera-proxy:
+    build: ./database/galera-proxy
+    restart: unless-stopped
+    environment:
+      DB_USER: ${CATALOG_DB_USER:?Set CATALOG_DB_USER in .env}
+      DB_PASSWORD: ${CATALOG_DB_PASSWORD:?Set CATALOG_DB_PASSWORD in .env}
+    depends_on:
+      galera1:
+        condition: service_healthy
+      galera2:
+        condition: service_healthy
+      galera3:
+        condition: service_healthy
     networks:
       - database
 
@@ -375,7 +511,15 @@ services:
       - galera2
       - galera3
       - mongodb
+      - mongodb2
+      - mongodb3
       - redis
+      - redis2
+      - redis3
+      - redis-sentinel1
+      - redis-sentinel2
+      - redis-sentinel3
+      - galera-proxy
     networks:
       - edge
       - application
@@ -386,6 +530,16 @@ volumes:
   galera2-data:
   galera3-data:
   mongodb-data:
+  mongodb2-data:
+  mongodb3-data:
+  mongodb-keyfile:
+  # These Redis volumes retain only rewritten topology configuration, not cache data.
+  redis-state:
+  redis2-state:
+  redis3-state:
+  redis-sentinel1-state:
+  redis-sentinel2-state:
+  redis-sentinel3-state:
 
 networks:
   edge:

@@ -17,22 +17,36 @@ improvements in order.
 
 ## 2. Remove single-instance data dependencies
 
-- [ ] Move MongoDB to a managed service or configure a properly operated
+- [x] Move MongoDB to a managed service or configure a properly operated
   replica set.
-- [ ] Move Redis to a managed service or configure an appropriate
+- [x] Move Redis to a managed service or configure an appropriate
   high-availability mode.
-- [ ] Decide whether Redis is a disposable cache or whether its data must
+- [x] Decide whether Redis is a disposable cache or whether its data must
   survive failures.
 - [ ] Add monitoring and backup/restore plans for MariaDB.
 - [ ] Test database restore procedures regularly.
 
+Implementation: authenticated three-member MongoDB replica set; Redis primary,
+two replicas and three Sentinels (quorum 2). Redis holds disposable catalog
+cache only, with SQL fallback and no RDB/AOF. Configuration volumes retain
+topology, not cached values. See [DATA-HA.md](./DATA-HA.md).
+Checked items describe the implementation; live election, failover and recovery
+acceptance tests remain pending. All members still share one Compose host.
+
 ## 3. Make database routing cluster-aware
 
-- [ ] Stop connecting application nodes directly to `galera1`.
-- [ ] Add a database-aware proxy or managed endpoint for failover and
+- [x] Stop connecting application nodes directly to `galera1`.
+- [x] Add a database-aware proxy or managed endpoint for failover and
   connection routing.
-- [ ] Define read/write routing behavior for the Galera cluster.
-- [ ] Review database connection-pool limits as application replicas scale.
+- [x] Define read/write routing behavior for the Galera cluster.
+- [x] Review database connection-pool limits as application replicas scale.
+
+Implementation: `galera-proxy` checks Primary component membership, connection,
+readiness, Synced state, wsrep enabled, desync disabled and read-only disabled.
+Both reads and writes use galera1 when healthy, then galera2/galera3 as ordered backups. Each API
+defaults to 10 SQL connections and a queue of 20; three APIs budget 30 connections.
+Recalculate this budget before scaling (proxy per-node cap: 100, frontend: 120).
+The proxy is currently a single instance. Live failover validation is pending.
 
 ## 4. Improve cache behavior
 

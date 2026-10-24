@@ -1,28 +1,17 @@
 import { readFile } from "node:fs/promises";
 import { MongoClient } from "mongodb";
 import mysql from "mysql2/promise";
-
-const required = (name) => {
-  const value = process.env[name];
-  if (!value) {
-    throw new Error(`Missing required environment variable: ${name}`);
-  }
-  return value;
-};
+import { mongoUri, required, sqlOptions } from "./data-config.js";
 
 const connectToMariaDb = async () => {
   for (let attempt = 1; attempt <= 30; attempt += 1) {
     try {
       return await mysql.createConnection({
-        host: required("DB_HOST"),
-        port: Number(process.env.DB_PORT || 3306),
-        database: required("DB_NAME"),
-        user: required("DB_USER"),
-        password: required("DB_PASSWORD"),
+        ...sqlOptions(),
         multipleStatements: true,
       });
     } catch (error) {
-      if (!["ECONNREFUSED", "ETIMEDOUT", "EHOSTUNREACH"].includes(error.code) || attempt === 30) {
+      if (!["ECONNREFUSED", "ETIMEDOUT", "EHOSTUNREACH", "ECONNRESET", "PROTOCOL_CONNECTION_LOST"].includes(error.code) || attempt === 30) {
         throw error;
       }
       console.log(`MariaDB is not ready; retrying (${attempt}/30)`);
@@ -34,13 +23,15 @@ const connectToMariaDb = async () => {
 
 const connection = await connectToMariaDb();
 const mongo = new MongoClient(
-  `mongodb://${required("MONGO_HOST")}:${Number(process.env.MONGO_PORT || 27017)}/${encodeURIComponent(required("MONGO_DB"))}`,
+  mongoUri(),
   {
     auth: {
       username: required("MONGO_USER"),
       password: required("MONGO_PASSWORD"),
     },
     authSource: "admin",
+    serverSelectionTimeoutMS: 10_000,
+    writeConcern: { w: "majority", wtimeoutMS: 5000 },
   },
 );
 

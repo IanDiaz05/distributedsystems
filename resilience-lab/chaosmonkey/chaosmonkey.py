@@ -35,11 +35,12 @@ GROUPS = {
     "application-lb": ["application-lb-master", "application-lb-backup"],
     "app": ["app1", "app2", "app3"],
     "galera": ["galera1", "galera2", "galera3"],
-    "redis": ["redis"],
-    "mongodb": ["mongodb"],
+    "redis": ["redis", "redis2", "redis3"],
+    "redis-sentinel": ["redis-sentinel1", "redis-sentinel2", "redis-sentinel3"],
+    "mongodb": ["mongodb", "mongodb2", "mongodb3"],
 }
 GROUPS["any"] = sum(GROUPS.values(), [])
-PROTECTED = {"presentation-entry", "nagios", "catalog-init"}
+PROTECTED = {"presentation-entry", "nagios", "catalog-init", "mongodb-init", "mongodb-keyfile"}
 
 stop_event = threading.Event()
 lock = threading.Lock()

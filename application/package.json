@@ -4,7 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "start": "node index.js"
+    "start": "node index.js",
+    "test": "node --test data-ha.test.js"
   },
   "dependencies": {
     "mongodb": "^6.17.0",

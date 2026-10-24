@@ -38,9 +38,11 @@ Run each under constant load; record outage time and failed requests.
 | 1 of 3 web/app nodes | stop | HAProxy health check drops it; zero or near-zero errors |
 | 2 of 3 web/app nodes | stop | Reduced capacity but still serving |
 | Galera node | stop galera2 or galera3 | Cluster keeps quorum |
-| Galera node | stop galera1 | **Expected to fail**: `DB_HOST=galera1` is a single point |
+| Galera node | stop galera1 | SQL proxy routes to a Synced node in the Primary component after detection; in-flight requests may fail |
 | Redis | stop | Graceful degradation: slower DB-only reads, no 500s |
-| MongoDB | stop | Same; reviews degraded |
+| MongoDB primary | stop | Remaining majority elects a primary; review writes resume after election |
+| MongoDB majority | stop two members | Majority writes fail visibly; do not force a new set |
+| Redis Sentinel | stop one sentinel | Two surviving Sentinels retain failover quorum |
 | Entry proxy | stop | Total outage, accepted Docker Desktop limitation |
 
 ## 4. Chaos engineering tests
@@ -64,8 +66,9 @@ compare against the hypothesis, recover, record findings.
 
 ## Gaps the tests will likely expose
 
-- `DB_HOST=galera1` in the app is a single point of failure.
-- Redis and MongoDB are single instances.
+- `galera-proxy` is a single instance; SQL node failover does not protect against proxy loss.
+- All database and Sentinel members share the same Compose host.
+- Live replica elections and restart convergence require acceptance evidence (see `../DATA-HA.md`).
 - `presentation-entry` is a single point of failure.
 - Compose `restart: unless-stopped` does not restart a container that was stopped deliberately.
 
@@ -91,4 +94,4 @@ compare against the hypothesis, recover, record findings.
 1. Add Prometheus and Grafana (HAProxy exporter, cAdvisor) so each experiment has graphs of its hypothesis.
 2. Add Pumba or Toxiproxy to the lab for latency, loss and partition experiments.
 3. Add k6 or Locust for scripted, threshold-based tests that can run in CI.
-4. Remove the `galera1` single point (database-aware proxy or managed endpoint) and rerun the DB failover test.
+4. Validate the database-aware proxy's Galera failover, MongoDB elections and Redis Sentinel failover using the acceptance cases in `../DATA-HA.md`.

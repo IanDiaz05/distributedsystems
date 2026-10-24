@@ -6,6 +6,11 @@ products, caches that list in Redis, and stores product reviews in MongoDB.
 HAProxy instances distribute requests within each tier, and Keepalived provides
 a master/backup virtual IP for each HAProxy pair.
 
+Data availability now uses a three-member MongoDB replica set, three Redis nodes
+with three Sentinels, and a Galera-aware SQL proxy. Redis is disposable cache;
+catalog reads bypass it during outages. See [DATA-HA.md](./DATA-HA.md) for routing,
+connection budgets, existing-volume precautions and pending live acceptance tests.
+
 ## Architecture
 
 ```mermaid
@@ -13,7 +18,8 @@ flowchart LR
     browser[Browser]
 
     subgraph edge["Presentation tier · edge network"]
-        plbM["HAProxy presentation master<br/>host port 80"]
+        entry["HAProxy presentation-entry<br/>host port 80"]
+        plbM["HAProxy presentation master"]
         plbB["HAProxy presentation backup"]
         pka["Keepalived VRRP pair<br/>presentation VIP 172.30.0.250"]
         web1["Nginx webnode1"]
@@ -47,26 +53,36 @@ flowchart LR
     end
 
     subgraph data["Data tier · internal database network"]
-        redis[("Redis<br/>catalog cache")]
-        galera1[("MariaDB Galera node 1<br/>catalog queries")]
+        redis[("Redis master + two replicas<br/>disposable catalog cache")]
+        sentinels["Three Redis Sentinels<br/>master discovery / failover"]
+        sqlproxy["galera-proxy<br/>cluster-aware health checks"]
+        galera1[("MariaDB Galera node 1")]
         galera2[("MariaDB Galera node 2")]
         galera3[("MariaDB Galera node 3")]
-        mongo[("MongoDB<br/>product reviews")]
+        mongo[("MongoDB store-rs<br/>three data-bearing members")]
+        sentinels --> redis
+        sqlproxy --> galera1
+        sqlproxy -. failover .-> galera2
+        sqlproxy -. failover .-> galera3
         galera1 <--> galera2
         galera2 <--> galera3
         galera3 <--> galera1
     end
 
-    browser -->|"HTTP :80"| plbM
+    browser -->|"HTTP :80"| entry
+    entry -->|"presentation VIP"| pka
     web1 -->|"API via VIP"| aka
     web2 -->|"API via VIP"| aka
     web3 -->|"API via VIP"| aka
     app1 -->|"cache lookup / invalidate"| redis
     app2 -->|"cache lookup / invalidate"| redis
     app3 -->|"cache lookup / invalidate"| redis
-    app1 -->|"cache miss: query catalog"| galera1
-    app2 -->|"cache miss: query catalog"| galera1
-    app3 -->|"cache miss: query catalog"| galera1
+    app1 -->|"cache miss / bypass"| sqlproxy
+    app2 -->|"cache miss / bypass"| sqlproxy
+    app3 -->|"cache miss / bypass"| sqlproxy
+    app1 -->|"discover cache master"| sentinels
+    app2 -->|"discover cache master"| sentinels
+    app3 -->|"discover cache master"| sentinels
     app1 -->|"read/write reviews"| mongo
     app2 -->|"read/write reviews"| mongo
     app3 -->|"read/write reviews"| mongo
@@ -75,8 +91,8 @@ flowchart LR
 Product-list requests check Redis first; a cache miss queries MariaDB and then
 populates Redis. Review requests use MongoDB, with MariaDB used to verify the
 product before a review is inserted. In this single-host Compose setup, host
-port 80 is published by the presentation master container; the presentation
-VIP does not move Docker's host-port mapping during failover.
+port 80 is published by `presentation-entry`, which forwards to the presentation
+VIP. This entry container is itself a single point of failure.
 
 ## Run locally
 
@@ -88,8 +104,9 @@ VIP does not move Docker's host-port mapping during failover.
 The product endpoint is `http://localhost/api/products/cheapest`; it returns
 JSON sorted by ascending price. The storefront calls this endpoint and renders
 the returned products. Schema creation and sample data insertion are
-idempotently performed by the `catalog-init` service after the first Galera
-node is healthy.
+idempotently performed by `catalog-init` through the Galera proxy, after the
+MongoDB replica-set initialization job succeeds. Read the existing-data precautions
+in [DATA-HA.md](./DATA-HA.md) before applying this topology to populated volumes.
 
 The storefront also displays a live request pipeline for its product and
 review API requests. The API's `X-Request-Trace` response header records the
@@ -118,9 +135,6 @@ The presentation VIP is `172.30.0.250` and the application VIP is
 namespace, uses unicast VRRP, and tracks the local HAProxy listener. Application
 requests from Nginx use the floating application VIP.
 
-Compose publishes host port 80 on the presentation master container. Docker's
-published-port mapping targets that specific container, so on a single-host
-Compose deployment the VIP failover does not move the host port mapping. The
-presentation VIP is available to other containers on the edge network; expose
-it through a host/network setup that supports floating VIPs if host-level
-failover is required.
+Compose publishes host port 80 on `presentation-entry`, which targets the floating
+presentation VIP. The entry container and the Compose host remain single points
+of failure even when both Keepalived pairs and data replication are configured.

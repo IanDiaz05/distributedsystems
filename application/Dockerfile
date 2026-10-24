@@ -5,7 +5,7 @@ WORKDIR /app
 COPY package.json ./
 RUN npm install --omit=dev
 
-COPY index.js init-db.js ./
+COPY index.js init-db.js data-config.js catalog-cache.js ./
 
 USER node
 
