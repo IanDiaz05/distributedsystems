@@ -71,7 +71,9 @@ curl -s http://localhost/api/products/ST-001/reviews | head -c 300; echo
 
 ```bash
 docker compose ps -a
+# son los mismos que el CPB0, nada ha cambiado
 curl -s http://localhost/api/health
+# {"status":"ok","cache":"available"}
 ```
 ---
 
@@ -84,7 +86,7 @@ Capturas:
 Resultados (JSON de `/api/runs/<id>`):
 
 ```json
-
+{"id": "20261026-000356-f0b9", "tool": "ab", "status": "finished", "started": 1792973036.7569382, "params": {"TARGET_URL": "http://presentation-entry/", "REQUESTS": "100", "CONCURRENCY": "5", "TIMEOUT": "30", "KEEPALIVE": "false"}, "summary": {"metrics": {"Requests/s": 4644.25, "Mean latency ms": 1.077, "Completed requests": 100.0, "Failed requests": 0.0, "Non-2xx responses": 0, "Transfer rate KB/s": 9088.94, "Total time s": 0.022}, "percentiles": {"p50": 1.0, "p66": 1.0, "p75": 1.0, "p80": 1.0, "p90": 1.0, "p95": 1.0, "p98": 2.0, "p99": 3.0, "p100": 3.0}, "unit": "ms"}, "finished": 1792973036.9142647, "exit_code": 0}
 ```
 
 ---
@@ -98,7 +100,7 @@ Capturas:
 Resultados:
 
 ```json
-
+{"id": "20261026-001026-3920", "tool": "ab", "status": "finished", "started": 1792973426.234424, "params": {"TARGET_URL": "http://presentation-entry/", "REQUESTS": "5000", "CONCURRENCY": "50", "TIMEOUT": "30", "KEEPALIVE": "false"}, "summary": {"metrics": {"Requests/s": 4846.22, "Mean latency ms": 10.317, "Completed requests": 5000.0, "Failed requests": 0.0, "Non-2xx responses": 0, "Transfer rate KB/s": 9484.19, "Total time s": 1.032}, "percentiles": {"p50": 10.0, "p66": 11.0, "p75": 12.0, "p80": 12.0, "p90": 14.0, "p95": 16.0, "p98": 21.0, "p99": 25.0, "p100": 38.0}, "unit": "ms"}, "finished": 1792973427.3478196, "exit_code": 0}
 ```
 
 ---
@@ -112,7 +114,7 @@ Capturas:
 Resultados (añade nota si aparecen fallos):
 
 ```json
-
+{"id": "20261026-001117-5fee", "tool": "ab", "status": "finished", "started": 1792973477.527725, "params": {"TARGET_URL": "http://presentation-entry/", "REQUESTS": "20000", "CONCURRENCY": "200", "TIMEOUT": "30", "KEEPALIVE": "false"}, "summary": {"metrics": {"Requests/s": 4472.16, "Mean latency ms": 44.721, "Completed requests": 20000.0, "Failed requests": 0.0, "Non-2xx responses": 0, "Transfer rate KB/s": 8752.16, "Total time s": 4.472}, "percentiles": {"p50": 44.0, "p66": 47.0, "p75": 49.0, "p80": 50.0, "p90": 54.0, "p95": 58.0, "p98": 62.0, "p99": 66.0, "p100": 118.0}, "unit": "ms"}, "finished": 1792973482.1269624, "exit_code": 0}
 ```
 
 ---
@@ -126,7 +128,7 @@ Capturas:
 Resultados:
 
 ```json
-
+{"id": "20261026-001300-ff8c", "tool": "siege", "status": "finished", "started": 1792973580.6611025, "params": {"URLS": "http://presentation-entry/\nhttp://presentation-entry/api/health\nhttp://presentation-entry/api/products/cheapest", "CONCURRENCY": "50", "DURATION": "60", "BENCHMARK": "true", "DELAY": "1"}, "summary": {"metrics": {"Transactions": 108838.0, "Availability %": 100.0, "Elapsed s": 60.25, "Data MB": 145.77, "Avg response s": 0.03, "Transactions/s": 1806.44, "Throughput MB/s": 2.42, "Avg concurrency": 47.38, "Successful": 108838.0, "Failed": 0.0, "Longest s": 0.14, "Shortest s": 0.0}}, "finished": 1792973641.0401034, "exit_code": 0}
 ```
 
 ---
@@ -141,7 +143,7 @@ Capturas:
 Resultados:
 
 ```json
-
+{"id": "20261026-001624-b96d", "tool": "jmeter", "status": "finished", "started": 1792973784.985113, "params": {"PATHS": "/\n/api/health\n/api/products/cheapest", "THREADS": "50", "RAMPUP": "10", "DURATION": "60", "THINK_MS": "0", "PROTOCOL": "http", "HOST": "presentation-entry", "PORT": "80"}, "summary": {"metrics": {"Samples": 93651, "Errors": 0, "Error %": 0.0, "Throughput req/s": 1563.64, "Avg ms": 29.3, "Min ms": 0, "Max ms": 823}, "percentiles": {"p50": 18, "p90": 66, "p95": 102, "p99": 191}, "unit": "ms", "table": [{"label": "GET /", "samples": 31226, "errors": 0, "avg_ms": 9.8}, {"label": "GET /api/health", "samples": 31221, "errors": 0, "avg_ms": 40.1}, {"label": "GET /api/products/cheapest", "samples": 31204, "errors": 0, "avg_ms": 38.0}], "report": true}, "finished": 1792973852.6632786, "exit_code": 0}
 ```
 
 ---
@@ -156,9 +158,10 @@ Capturas:
 Resultados (nota el primer síntoma de saturación):
 
 ```json
-
+{"id": "20261026-004542-59da", "tool": "jmeter", "status": "finished", "started": 1792975542.2557547, "params": {"PATHS": "/\n/api/health\n/api/products/cheapest", "THREADS": "200", "RAMPUP": "30", "DURATION": "90", "THINK_MS": "0", "PROTOCOL": "http", "HOST": "presentation-entry", "PORT": "80"}, "summary": {"metrics": {"Samples": 149975, "Errors": 0, "Error %": 0.0, "Throughput req/s": 1667.19, "Avg ms": 99.9, "Min ms": 0, "Max ms": 1398}, "percentiles": {"p50": 61, "p90": 234, "p95": 342, "p99": 669}, "unit": "ms", "table": [{"label": "GET /", "samples": 50030, "errors": 0, "avg_ms": 32.0}, {"label": "GET /api/health", "samples": 50022, "errors": 0, "avg_ms": 134.1}, {"label": "GET /api/products/cheapest", "samples": 49923, "errors": 0, "avg_ms": 133.7}], "report": true}, "finished": 1792975642.2990954, "exit_code": 0}
 ```
 
+En cuanto al sintoma de saturacion, no hay errores pero parece que la latencia empieza a crecer bastante
 ---
 
 ## T07 — Efecto de la caché
@@ -175,18 +178,27 @@ curl -s -X POST http://localhost/api/cache/clear; echo
 Resultados (run A y run B):
 
 ```json
+// Run A
+{"id": "20261026-005818-3869", "tool": "ab", "status": "finished", "started": 1792976298.7636094, "params": {"TARGET_URL": "http://presentation-entry/api/products/cheapest", "REQUESTS": "5000", "CONCURRENCY": "50", "TIMEOUT": "30", "KEEPALIVE": "false"}, "summary": {"metrics": {"Requests/s": 2519.27, "Mean latency ms": 19.847, "Completed requests": 5000.0, "Failed requests": 0.0, "Non-2xx responses": 0, "Transfer rate KB/s": 3478.77, "Total time s": 1.985}, "percentiles": {"p50": 19.0, "p66": 22.0, "p75": 24.0, "p80": 25.0, "p90": 29.0, "p95": 32.0, "p98": 36.0, "p99": 39.0, "p100": 54.0}, "unit": "ms"}, "finished": 1792976300.8295298, "exit_code": 0}
 
+// Run B
+{"id": "20261026-005731-9071", "tool": "ab", "status": "finished", "started": 1792976251.0854461, "params": {"TARGET_URL": "http://presentation-entry/api/products/cheapest", "REQUESTS": "5000", "CONCURRENCY": "50", "TIMEOUT": "30", "KEEPALIVE": "false"}, "summary": {"metrics": {"Requests/s": 2336.84, "Mean latency ms": 21.396, "Completed requests": 5000.0, "Failed requests": 0.0, "Non-2xx responses": 0, "Transfer rate KB/s": 3226.86, "Total time s": 2.14}, "percentiles": {"p50": 20.0, "p66": 24.0, "p75": 26.0, "p80": 27.0, "p90": 31.0, "p95": 35.0, "p98": 39.0, "p99": 43.0, "p100": 61.0}, "unit": "ms"}, "finished": 1792976253.304467, "exit_code": 0}
 ```
 
+Ejecute el checkpoint y todo sigue correcto antes y despues de ejecutar las pruebas
 ---
 
 ## CP-B2 — Checkpoint antes del bloque de LB
 
 ```bash
 docker compose ps -a
+# son los mismos, nada ha cambiado
 curl -s http://localhost/api/health
+# {"status":"ok","cache":"available"}
 docker exec distributed-three-tier-presentation-keepalived-master-1 ip -4 -o addr show | grep 172.30.0.250 || echo "VIP de presentación NO está en el master"
+# 2: eth0    inet 172.30.0.250/24 scope global secondary eth0\       valid_lft forever preferred_lft forever
 docker exec distributed-three-tier-application-keepalived-master-1 ip -4 -o addr show | grep 172.31.0.250 || echo "VIP de aplicación NO está en el master"
+# 2: eth0    inet 172.31.0.250/24 scope global secondary eth0\       valid_lft forever preferred_lft forever
 ```
 
 ---
