@@ -41,6 +41,7 @@ docker exec distributed-three-tier-presentation-keepalived-master-1 ip -4 -o add
 docker exec distributed-three-tier-application-keepalived-master-1 ip -4 -o addr show | grep 172.31.0.250 || echo "VIP de aplicación NO está en el master"
 ```
 
+> La salida de estos comandos se encuentran en `docs/tests/CP-B0.md`
 ---
 
 ## T00 — Salud y round-robin
@@ -52,9 +53,16 @@ Capturas:
 
 ```bash
 curl -s http://localhost/api/health
+# {"status":"ok","cache":"available"}
 for i in 1 2 3; do curl -sI http://localhost/api/health | grep -i x-request-trace; done
+# x-request-trace: presentation-lb-master -> webnode2 -> application-lb-master -> app1
+# x-request-trace: presentation-lb-master -> webnode3 -> application-lb-master -> app2
+# x-request-trace: presentation-lb-master -> webnode1 -> application-lb-master -> app3
+
 curl -s http://localhost/api/products/cheapest | head -c 300; echo
+# [{"id":1,"sku":"ST-001","name":"Cotton Tote Bag","description":"Reusable natural cotton shopping bag.","price":"3.49"},{"id":4,"sku":"ST-002","name":"Wooden Pencil Set","description":"Pack of six graphite pencils.","price":"4.25"},{"id":7,"sku":"ST-003","name":"Ceramic Mug","description":"Everyday 3
 curl -s http://localhost/api/products/ST-001/reviews | head -c 300; echo
+# {"sku":"ST-001","reviews":[{"comment":"Sturdy and convenient for grocery shopping.","createdAt":"2025-01-15T12:00:00.000Z","rating":5,"reviewer":"Alex"}]}
 ```
 
 ---
@@ -65,7 +73,6 @@ curl -s http://localhost/api/products/ST-001/reviews | head -c 300; echo
 docker compose ps -a
 curl -s http://localhost/api/health
 ```
-
 ---
 
 ## T01 — ab Smoke
