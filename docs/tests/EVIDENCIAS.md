@@ -626,7 +626,11 @@ curl -s http://localhost/api/health; echo   # estado tras la prueba
 Servicios que cambiaron de estado y tiempo de detección observado (escribe aquí):
 
 ```text
+web1 fue el primero en estar "Down", aunque nagios tardo un par de minutos en detectar el cambio, parece logico ya que en la interfaz web dice que se recarga cada 90 segundos.
+despues web1 volvio sin problema y web2 fue el que se detuvo.
+durante un rato web2 estuvo inactivo pero volvio sin problemas.
 
+Nota: se tomo una tercera foto `T25-nagios-3.png` de la pantalla de chaos monkey mostrando el test, las primeras fotos son de nagios
 ```
 
 ---
@@ -643,18 +647,35 @@ Capturas:
 
 ```bash
 docker compose ps -a
+# exactamente como el primer check
 curl -s http://localhost/api/health
+# {"status":"ok","cache":"available"}
 for i in 1 2 3; do curl -sI http://localhost/api/health | grep -i x-request-trace; done
+# x-request-trace: presentation-lb-master -> webnode3 -> application-lb-master -> app1
+# x-request-trace: presentation-lb-master -> webnode1 -> application-lb-master -> app2
+# x-request-trace: presentation-lb-master -> webnode2 -> application-lb-master -> app3
 ```
 
 ```bash
 set -a; . ./.env; set +a
 docker exec distributed-three-tier-galera1-1 mariadb -uroot -p"$MARIADB_ROOT_PASSWORD" \
   -e "SHOW STATUS LIKE 'wsrep_cluster_size'; SHOW STATUS LIKE 'wsrep_local_state_comment';"
+
+# Variable_name   Value
+# wsrep_cluster_size      3
+# Variable_name   Value
+# wsrep_local_state_comment       Synced
+
 docker exec distributed-three-tier-mongodb-1 mongosh -u "$MONGO_ROOT_USERNAME" \
   -p "$MONGO_ROOT_PASSWORD" --authenticationDatabase admin --quiet \
   --eval 'rs.status().members.map(m=>m.name+" "+m.stateStr).join("\n")'
+
+# mongodb:27017 SECONDARY
+# mongodb2:27017 SECONDARY
+# mongodb3:27017 PRIMARY
+
 docker exec distributed-three-tier-redis-sentinel1-1 redis-cli -p 26379 sentinel ckquorum catalog-cache
+# OK 3 usable Sentinels. Quorum and failover authorization can be reached
 ```
 
 ---
@@ -662,5 +683,31 @@ docker exec distributed-three-tier-redis-sentinel1-1 redis-cli -p 26379 sentinel
 ## Incidencias durante la campaña (contenedores caídos, runs interrumpidos, etc.)
 
 ```text
+el unico contenedor que "daba problemas" fue galera1, cada vez que se apagaba e intentaba encender, ya sea porque la maquina host se apagaba controladamente, y en la parte de los tests con galera cuando se "apago", ya no "regreso" automaticamente. este fue el problema que haye:
+1. Incidente actual: galera1 caído  
+- docker compose ps: distributed-three-tier-galera1-1 en Exited (1) hace ~14 min.  
+- Log: Persisted data detected. Restoring + safe_to_bootstrap=0 → el contenedor intenta bootstrap y se niega.  
+- Consecuencia: wsrep_cluster_size = 2 (quorum aún válido, pero sin redundancia completa).  
+- Nagios muestra galera1 como DOWN / TCP CRITICAL (esto es esperado mientras el contenedor esté caído).
 
+y esta fue la solucion que ejecute:
+Recuperación de galera1 (hacer antes de B5)
+No fuerces bootstrap mientras galera2/galera3 están sanos. Usa un override temporal sin modificar docker-compose.yml:
+cat > /tmp/opencode/galera-override.yml <<'EOF'
+services:
+  galera1:
+    environment:
+      MARIADB_GALERA_CLUSTER_BOOTSTRAP: "no"
+EOF
+
+docker compose -f docker-compose.yml -f /tmp/opencode/galera-override.yml up -d galera1
+Luego verifica:
+docker compose ps -a | grep galera1
+set -a; . ./.env; set +a
+docker exec distributed-three-tier-galera1-1 mariadb -uroot -p"$MARIADB_ROOT_PASSWORD" \
+  -e "SHOW STATUS LIKE 'wsrep_cluster_size'; SHOW STATUS LIKE 'wsrep_local_state_comment';"
+Esperado: galera1 Up (healthy), wsrep_cluster_size = 3, Synced. Si se recupera así, el incidente queda documentado como “rejoin por IST/SST, sin bootstrap forzado”.
+
+---
+despues de eso, galera1 volvio a la normalidad.
 ```
