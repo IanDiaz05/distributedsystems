@@ -50,3 +50,17 @@ docker compose logs --tail=100 galera1 mongodb mongodb-init catalog-init
 ```
 
 El punto clave para evitar que reaparezcan los errores anteriores es **detener los servicios con normalidad y conservar juntos los volúmenes y las credenciales que corresponden a esos datos**.
+
+## Clúster recuperado con datos existentes
+
+`GALERA_BOOTSTRAP` controla el bootstrap de `galera1` (por defecto `yes`,
+para la inicialización original). Después de recuperar el clúster desde otro
+nodo, configura `GALERA_BOOTSTRAP=no` en `.env` para que `galera1` se una
+al clúster activo sin intentar crear otro. No dejes habilitado
+`MARIADB_GALERA_FORCE_SAFETOBOOTSTRAP` en la configuración habitual.
+
+Esta opción permite iniciar o recrear servicios mientras el clúster está activo;
+no automatiza el encendido después de detener todos los nodos. En ese caso,
+identifica primero el nodo seguro y más actualizado y realiza una recuperación
+controlada antes de arrancar los demás. No actives el bootstrap de `galera1`
+a ciegas: otro nodo puede contener transacciones más recientes.
