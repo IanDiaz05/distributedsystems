@@ -38,6 +38,13 @@ resource "terraform_data" "minikube_cluster" {
           --addons=metrics-server
       fi
 
+      # Debian hosts using systemd-resolved (127.0.0.53) break Minikube CoreDNS
+      # upstream lookups (github.com, ghcr.io) unless public resolvers are set.
+      kubectl --context="$${CLUSTER_NAME}" -n kube-system get configmap coredns -o yaml \
+        | sed -E 's/forward \. [^ {]*/forward . 8.8.8.8 1.1.1.1/' \
+        | kubectl --context="$${CLUSTER_NAME}" apply -f -
+      kubectl --context="$${CLUSTER_NAME}" -n kube-system rollout restart deployment/coredns
+
       mapfile -t nodes < <(kubectl --context="$${CLUSTER_NAME}" get nodes -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}')
       read -r -a zones <<< "$${TOPOLOGY_ZONES}"
       for i in "$${!nodes[@]}"; do

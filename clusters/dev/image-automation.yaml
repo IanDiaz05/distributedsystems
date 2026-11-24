@@ -1,4 +1,4 @@
-apiVersion: image.toolkit.fluxcd.io/v1beta2
+apiVersion: image.toolkit.fluxcd.io/v1
 kind: ImageRepository
 metadata:
   name: store-api
@@ -7,7 +7,7 @@ spec:
   image: ghcr.io/iandiaz05/store-api
   interval: 5m
 ---
-apiVersion: image.toolkit.fluxcd.io/v1beta2
+apiVersion: image.toolkit.fluxcd.io/v1
 kind: ImageRepository
 metadata:
   name: store-web
@@ -16,7 +16,7 @@ spec:
   image: ghcr.io/iandiaz05/store-web
   interval: 5m
 ---
-apiVersion: image.toolkit.fluxcd.io/v1beta2
+apiVersion: image.toolkit.fluxcd.io/v1
 kind: ImagePolicy
 metadata:
   name: store-api
@@ -30,7 +30,7 @@ spec:
     alphabetical:
       order: asc
 ---
-apiVersion: image.toolkit.fluxcd.io/v1beta2
+apiVersion: image.toolkit.fluxcd.io/v1
 kind: ImagePolicy
 metadata:
   name: store-web
@@ -44,7 +44,7 @@ spec:
     alphabetical:
       order: asc
 ---
-apiVersion: image.toolkit.fluxcd.io/v1beta2
+apiVersion: image.toolkit.fluxcd.io/v1
 kind: ImageUpdateAutomation
 metadata:
   name: store-apps
