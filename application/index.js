@@ -2,7 +2,7 @@ import { createServer } from "node:http";
 import { MongoClient } from "mongodb";
 import mysql from "mysql2/promise";
 import { createSentinel } from "redis";
-import { mongoUri, positiveInteger, required, sentinelOptions, sqlOptions } from "./data-config.js";
+import { mongoAuthSource, mongoUri, positiveInteger, required, sentinelOptions, sqlOptions } from "./data-config.js";
 import { createCatalogCache } from "./catalog-cache.js";
 
 const pool = mysql.createPool({
@@ -21,7 +21,7 @@ const mongo = new MongoClient(
       username: required("MONGO_USER"),
       password: required("MONGO_PASSWORD"),
     },
-    authSource: "admin",
+    authSource: mongoAuthSource(),
     serverSelectionTimeoutMS: 5000,
     connectTimeoutMS: 3000,
     socketTimeoutMS: 5000,
@@ -85,6 +85,24 @@ const start = async () => {
         await Promise.all([pool.query("SELECT 1"), mongo.db().command({ ping: 1 })]);
         sendJson(response, 200, { status: "ok", cache: redis.isReady ? "available" : "degraded" },
           [...trace, "galera-proxy", "mongodb replica set"]);
+        return;
+      }
+
+      if (request.method === "GET" && pathname === "/healthz") {
+        sendJson(response, 200, { status: "ok" }, trace);
+        return;
+      }
+
+      if (request.method === "GET" && pathname === "/readyz") {
+        await Promise.all([pool.query("SELECT 1"), mongo.db().command({ ping: 1 })]);
+        sendJson(response, 200, {
+          status: "ready",
+          dependencies: {
+            mariadb: "ok",
+            mongodb: "ok",
+            redis: redis.isReady ? "available" : "degraded",
+          },
+        }, trace);
         return;
       }
 

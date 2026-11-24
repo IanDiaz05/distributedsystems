@@ -21,6 +21,8 @@ export const sqlOptions = (env = process.env) => ({
   connectTimeout: positiveInteger("DB_CONNECT_TIMEOUT_MS", 3000, env),
 });
 
+export const mongoAuthSource = (env = process.env) => env.MONGO_AUTH_SOURCE || "admin";
+
 export const mongoUri = (env = process.env) => {
   const hosts = required("MONGO_HOSTS", env);
   const database = encodeURIComponent(required("MONGO_DB", env));

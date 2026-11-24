@@ -1,0 +1,26 @@
+server {
+    listen 8080;
+    server_name _;
+    root /usr/share/nginx/html;
+    index index.html;
+
+    location = /catalog.js {
+        alias /usr/share/nginx/catalog.js;
+    }
+
+    location = /catalog.css {
+        alias /usr/share/nginx/catalog.css;
+    }
+
+    location /api/ {
+        proxy_pass ${API_UPSTREAM};
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Presentation-LB $http_x_presentation_lb;
+        proxy_set_header X-Web-Node $hostname;
+    }
+
+    location / {
+        try_files $uri$uri/ =404;
+    }
+}
