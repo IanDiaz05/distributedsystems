@@ -55,7 +55,7 @@ variable "git_repository" {
 }
 
 variable "github_token" {
-  description = "GitHub token for Flux bootstrap Git authentication. Pass it as TF_VAR_github_token from the GITHUB_TOKEN environment variable (TF_VAR_github_token=\"$GITHUB_TOKEN\"). Do not commit the token."
+  description = "GitHub Personal Access Token used by FluxCD to bootstrap and sync the repository. Prefer -var=\"github_token=$GITHUB_TOKEN\" or TF_VAR_github_token; if left empty, the provider falls back to the GITHUB_TOKEN environment variable."
   type        = string
   sensitive   = true
   default     = ""
