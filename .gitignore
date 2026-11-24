@@ -24,3 +24,12 @@ credentials.json
 backups/
 **/backups/
 
+# Terraform state and cache (keep .terraform.lock.hcl tracked).
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+override.tf
+override.tf.json
+*.auto.tfvars
+

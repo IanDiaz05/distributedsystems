@@ -1,0 +1,10 @@
+environment           = "dev"
+cluster_name          = "store-dev"
+cluster_provider      = "minikube"
+node_count            = 3
+node_cpus             = 2
+node_memory_mb        = 2600
+storage_provisioner   = "k8s.io/minikube-hostpath"
+git_branch            = "main"
+target_path           = "clusters/dev"
+enable_flux_bootstrap = false

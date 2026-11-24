@@ -1,0 +1,80 @@
+variable "environment" {
+  description = "Environment name (dev or prod)."
+  type        = string
+}
+
+variable "cluster_name" {
+  description = "Cluster name and kubeconfig context."
+  type        = string
+}
+
+variable "cluster_provider" {
+  description = "Cluster runtime: minikube or k3s."
+  type        = string
+}
+
+variable "node_count" {
+  description = "Number of Kubernetes nodes."
+  type        = number
+}
+
+variable "node_cpus" {
+  description = "vCPU count per node."
+  type        = number
+}
+
+variable "node_memory_mb" {
+  description = "Memory in MiB per node."
+  type        = number
+}
+
+variable "storage_provisioner" {
+  description = "StorageClass provisioner for this environment."
+  type        = string
+}
+
+variable "git_branch" {
+  description = "Git branch Flux reconciles."
+  type        = string
+}
+
+variable "target_path" {
+  description = "Flux path relative to the repository root."
+  type        = string
+}
+
+variable "enable_flux_bootstrap" {
+  description = "Create flux_bootstrap_git. Keep false until Phase 5."
+  type        = bool
+}
+
+variable "git_repository" {
+  description = "HTTPS URL of the GitOps repository."
+  type        = string
+  default     = "https://github.com/IanDiaz05/distributedsystems.git"
+}
+
+variable "github_token" {
+  description = "Optional GitHub token used only when Flux bootstrap is enabled."
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "pod_cidr" {
+  description = "Pod network CIDR metadata."
+  type        = string
+  default     = "10.244.0.0/16"
+}
+
+variable "service_cidr" {
+  description = "Service network CIDR metadata."
+  type        = string
+  default     = "10.96.0.0/12"
+}
+
+variable "metallb_pool_range" {
+  description = "MetalLB address pool metadata."
+  type        = string
+  default     = "192.168.49.80-192.168.49.90"
+}

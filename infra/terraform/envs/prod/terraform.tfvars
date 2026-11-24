@@ -1,0 +1,10 @@
+environment           = "prod"
+cluster_name          = "store-prod"
+cluster_provider      = "k3s"
+node_count            = 3
+node_cpus             = 4
+node_memory_mb        = 8192
+storage_provisioner   = "driver.longhorn.io"
+git_branch            = "release"
+target_path           = "clusters/prod"
+enable_flux_bootstrap = false
