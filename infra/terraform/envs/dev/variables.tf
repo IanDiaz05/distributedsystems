@@ -44,7 +44,7 @@ variable "target_path" {
 }
 
 variable "enable_flux_bootstrap" {
-  description = "Create flux_bootstrap_git. Keep false until Phase 5."
+  description = "Create flux_bootstrap_git. Enable after clusters/ is pushed and TF_VAR_github_token is set from GITHUB_TOKEN."
   type        = bool
 }
 
@@ -55,7 +55,7 @@ variable "git_repository" {
 }
 
 variable "github_token" {
-  description = "Optional GitHub token used only when Flux bootstrap is enabled."
+  description = "GitHub token for Flux bootstrap Git authentication. Pass it as TF_VAR_github_token from the GITHUB_TOKEN environment variable (TF_VAR_github_token=\"$GITHUB_TOKEN\"). Do not commit the token."
   type        = string
   sensitive   = true
   default     = ""

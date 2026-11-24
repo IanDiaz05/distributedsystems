@@ -1,0 +1,71 @@
+apiVersion: image.toolkit.fluxcd.io/v1beta2
+kind: ImageRepository
+metadata:
+  name: store-api
+  namespace: flux-system
+spec:
+  image: ghcr.io/iandiaz05/store-api
+  interval: 5m
+---
+apiVersion: image.toolkit.fluxcd.io/v1beta2
+kind: ImageRepository
+metadata:
+  name: store-web
+  namespace: flux-system
+spec:
+  image: ghcr.io/iandiaz05/store-web
+  interval: 5m
+---
+apiVersion: image.toolkit.fluxcd.io/v1beta2
+kind: ImagePolicy
+metadata:
+  name: store-api
+  namespace: flux-system
+spec:
+  imageRepositoryRef:
+    name: store-api
+  filterTags:
+    pattern: ^sha-[0-9a-f]{7,40}$
+  policy:
+    alphabetical:
+      order: asc
+---
+apiVersion: image.toolkit.fluxcd.io/v1beta2
+kind: ImagePolicy
+metadata:
+  name: store-web
+  namespace: flux-system
+spec:
+  imageRepositoryRef:
+    name: store-web
+  filterTags:
+    pattern: ^sha-[0-9a-f]{7,40}$
+  policy:
+    alphabetical:
+      order: asc
+---
+apiVersion: image.toolkit.fluxcd.io/v1beta2
+kind: ImageUpdateAutomation
+metadata:
+  name: store-apps
+  namespace: flux-system
+spec:
+  interval: 5m
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  git:
+    checkout:
+      ref:
+        branch: main
+    commit:
+      author:
+        name: fluxcdbot
+        email: fluxcdbot@users.noreply.github.com
+      messageTemplate: |
+        chore(dev): update store image tags
+    push:
+      branch: main
+  update:
+    path: ./deploy/overlays/dev
+    strategy: Setters

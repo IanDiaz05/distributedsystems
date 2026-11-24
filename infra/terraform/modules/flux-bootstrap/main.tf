@@ -3,4 +3,8 @@ resource "flux_bootstrap_git" "this" {
 
   namespace = var.flux_namespace
   path      = var.target_path
+  components_extra = [
+    "image-reflector-controller",
+    "image-automation-controller",
+  ]
 }

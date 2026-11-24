@@ -1,0 +1,118 @@
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: platform-operators
+  namespace: flux-system
+spec:
+  interval: 5m
+  path: ./deploy/platform/operators
+  prune: true
+  wait: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  decryption:
+    provider: sops
+    secretRef:
+      name: sops-age
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: platform-cert-manager
+  namespace: flux-system
+spec:
+  interval: 5m
+  path: ./deploy/platform/cert-manager
+  prune: true
+  wait: true
+  dependsOn:
+    - name: platform-operators
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  decryption:
+    provider: sops
+    secretRef:
+      name: sops-age
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: platform-data-tier
+  namespace: flux-system
+spec:
+  interval: 5m
+  path: ./deploy/platform/data-tier
+  prune: true
+  wait: true
+  dependsOn:
+    - name: platform-operators
+    - name: platform-cert-manager
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  decryption:
+    provider: sops
+    secretRef:
+      name: sops-age
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: platform-rabbitmq
+  namespace: flux-system
+spec:
+  interval: 5m
+  path: ./deploy/platform/rabbitmq
+  prune: true
+  wait: true
+  dependsOn:
+    - name: platform-operators
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  decryption:
+    provider: sops
+    secretRef:
+      name: sops-age
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: platform-observability
+  namespace: flux-system
+spec:
+  interval: 5m
+  path: ./deploy/platform/observability
+  prune: true
+  wait: true
+  dependsOn:
+    - name: store-apps
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  decryption:
+    provider: sops
+    secretRef:
+      name: sops-age
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: platform-security
+  namespace: flux-system
+spec:
+  interval: 5m
+  path: ./deploy/platform/wazuh
+  prune: true
+  wait: true
+  dependsOn:
+    - name: platform-observability
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  decryption:
+    provider: sops
+    secretRef:
+      name: sops-age
