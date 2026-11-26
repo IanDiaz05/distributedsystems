@@ -38,17 +38,25 @@ spec:
       cpu: 500m
       memory: 512Mi
   podSecurityContext:
+    runAsUser: 0
+    runAsGroup: 999
     fsGroup: 999
     fsGroupChangePolicy: OnRootMismatch
-    runAsGroup: 999
     seccompProfile:
       type: RuntimeDefault
   securityContext:
+    runAsUser: 0
+    runAsGroup: 999
     allowPrivilegeEscalation: false
     capabilities:
       drop:
         - ALL
-    runAsUser: 0
+      add:
+        - CHOWN
+        - DAC_OVERRIDE
+        - FOWNER
+        - SETGID
+        - SETUID
 ---
 apiVersion: k8s.mariadb.com/v1alpha1
 kind: MaxScale
@@ -75,17 +83,25 @@ spec:
       cpu: 250m
       memory: 256Mi
   podSecurityContext:
+    runAsUser: 0
+    runAsGroup: 999
     fsGroup: 999
     fsGroupChangePolicy: OnRootMismatch
-    runAsGroup: 999
     seccompProfile:
       type: RuntimeDefault
   securityContext:
+    runAsUser: 0
+    runAsGroup: 999
     allowPrivilegeEscalation: false
     capabilities:
       drop:
         - ALL
-    runAsUser: 0
+      add:
+        - CHOWN
+        - DAC_OVERRIDE
+        - FOWNER
+        - SETGID
+        - SETUID
 ---
 apiVersion: k8s.mariadb.com/v1alpha1
 kind: SqlJob
