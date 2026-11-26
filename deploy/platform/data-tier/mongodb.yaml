@@ -81,7 +81,6 @@ spec:
             runAsGroup: 2000
             fsGroup: 2000
             fsGroupChangePolicy: OnRootMismatch
-            runAsNonRoot: true
             seccompProfile:
               type: RuntimeDefault
           initContainers:
@@ -127,7 +126,7 @@ spec:
                 capabilities:
                   drop:
                     - ALL
-                runAsNonRoot: true
+                runAsNonRoot: false
                 runAsUser: 2000
                 runAsGroup: 2000
                 seccompProfile:
@@ -145,7 +144,7 @@ spec:
                 capabilities:
                   drop:
                     - ALL
-                runAsNonRoot: true
+                runAsNonRoot: false
                 runAsUser: 2000
                 runAsGroup: 2000
                 seccompProfile:
@@ -213,7 +212,7 @@ metadata:
   name: mongodb-reviews-init
   namespace: data-tier
 spec:
-  backoffLimit: 12
+  backoffLimit: 30
   ttlSecondsAfterFinished: 86400
   template:
     spec:
