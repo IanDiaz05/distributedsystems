@@ -39,9 +39,8 @@ spec:
       memory: 512Mi
   podSecurityContext:
     fsGroup: 999
+    fsGroupChangePolicy: OnRootMismatch
     runAsGroup: 999
-    runAsNonRoot: true
-    runAsUser: 999
     seccompProfile:
       type: RuntimeDefault
   securityContext:
@@ -49,8 +48,7 @@ spec:
     capabilities:
       drop:
         - ALL
-    runAsNonRoot: true
-    runAsUser: 999
+    runAsUser: 0
 ---
 apiVersion: k8s.mariadb.com/v1alpha1
 kind: MaxScale
@@ -77,7 +75,9 @@ spec:
       cpu: 250m
       memory: 256Mi
   podSecurityContext:
-    runAsNonRoot: true
+    fsGroup: 999
+    fsGroupChangePolicy: OnRootMismatch
+    runAsGroup: 999
     seccompProfile:
       type: RuntimeDefault
   securityContext:
@@ -85,7 +85,7 @@ spec:
     capabilities:
       drop:
         - ALL
-    runAsNonRoot: true
+    runAsUser: 0
 ---
 apiVersion: k8s.mariadb.com/v1alpha1
 kind: SqlJob
