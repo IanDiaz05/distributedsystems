@@ -26,9 +26,9 @@ spec:
         name: redis-operator
         namespace: platform-system
   install:
-    crds: CreateReplace
+    crds: Skip
   upgrade:
-    crds: CreateReplace
+    crds: Skip
   values:
     resources:
       requests:

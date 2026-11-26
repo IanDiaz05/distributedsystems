@@ -5,5 +5,6 @@ resources:
   - traefik.yaml
   - mariadb-operator.yaml
   - mongodb-operator.yaml
+  - redis-crd.yaml
   - redis-operator.yaml
   - rabbitmq-operator.yaml
