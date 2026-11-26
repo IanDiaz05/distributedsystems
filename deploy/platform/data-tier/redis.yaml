@@ -1,0 +1,33 @@
+apiVersion: databases.spotahome.com/v1
+kind: RedisFailover
+metadata:
+  name: catalog-cache
+  namespace: data-tier
+spec:
+  sentinel:
+    replicas: 3
+    customConfig:
+      - down-after-milliseconds 5000
+      - failover-timeout 30000
+      - parallel-syncs 1
+    resources:
+      requests:
+        cpu: 25m
+        memory: 32Mi
+      limits:
+        cpu: 100m
+        memory: 64Mi
+  redis:
+    replicas: 3
+    customConfig:
+      - save ""
+      - appendonly no
+      - maxmemory 128mb
+      - maxmemory-policy allkeys-lru
+    resources:
+      requests:
+        cpu: 50m
+        memory: 96Mi
+      limits:
+        cpu: 200m
+        memory: 160Mi

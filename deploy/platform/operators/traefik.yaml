@@ -1,0 +1,52 @@
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: traefik
+  namespace: platform-system
+spec:
+  interval: 1h
+  url: https://traefik.github.io/charts
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: traefik
+  namespace: platform-system
+spec:
+  interval: 30m
+  timeout: 10m
+  targetNamespace: platform-system
+  dependsOn:
+    - name: metallb
+      namespace: platform-system
+  chart:
+    spec:
+      chart: traefik
+      version: "42.4.3"
+      interval: 1h
+      sourceRef:
+        kind: HelmRepository
+        name: traefik
+        namespace: platform-system
+  install:
+    crds: CreateReplace
+    # LoadBalancer IP is assigned after MetalLB's pool (platform-cert-manager).
+    disableWait: true
+  upgrade:
+    crds: CreateReplace
+    disableWait: true
+  values:
+    ingressClass:
+      enabled: true
+      isDefaultClass: true
+    service:
+      enabled: true
+      spec:
+        type: LoadBalancer
+    resources:
+      requests:
+        cpu: 50m
+        memory: 128Mi
+      limits:
+        cpu: 250m
+        memory: 256Mi

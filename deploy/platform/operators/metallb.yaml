@@ -1,0 +1,54 @@
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: metallb
+  namespace: platform-system
+spec:
+  interval: 1h
+  url: https://metallb.github.io/metallb
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: metallb
+  namespace: platform-system
+spec:
+  interval: 30m
+  timeout: 10m
+  targetNamespace: platform-system
+  chart:
+    spec:
+      chart: metallb
+      version: "0.16.2"
+      interval: 1h
+      sourceRef:
+        kind: HelmRepository
+        name: metallb
+        namespace: platform-system
+  install:
+    crds: CreateReplace
+  upgrade:
+    crds: CreateReplace
+  values:
+    # L2 advertisement only; skip FRR/BGP sidecars on the 7.8 GiB node budget.
+    frrk8s:
+      enabled: false
+    speaker:
+      frr:
+        enabled: false
+      tolerateMaster: true
+      resources:
+        requests:
+          cpu: 25m
+          memory: 64Mi
+        limits:
+          cpu: 100m
+          memory: 128Mi
+    controller:
+      resources:
+        requests:
+          cpu: 25m
+          memory: 64Mi
+        limits:
+          cpu: 100m
+          memory: 128Mi

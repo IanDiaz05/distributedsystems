@@ -4,6 +4,7 @@ resources:
   - ../../base
   - namespace.yaml
   - sops-smoke-secret.enc.yaml
+  - data-tier-credentials.enc.yaml
 images:
   - name: ghcr.io/iandiaz05/store-api
     newTag: sha-0000000 # {"$imagepolicy": "flux-system:store-api:tag"}

@@ -1,0 +1,101 @@
+apiVersion: k8s.mariadb.com/v1alpha1
+kind: MariaDB
+metadata:
+  name: mariadb-galera
+  namespace: data-tier
+spec:
+  replicas: 3
+  galera:
+    enabled: true
+  storage:
+    size: 2Gi
+    storageClassName: store-replicated
+  database: store
+  username: store_app
+  passwordSecretKeyRef:
+    name: mariadb-secret
+    key: password
+  rootPasswordSecretKeyRef:
+    name: mariadb-secret
+    key: root-password
+  myCnf: |
+    [mysqld]
+    max_connections = 150
+    innodb_buffer_pool_size = 128M
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  topologySpreadConstraints:
+    - maxSkew: 1
+      topologyKey: topology.kubernetes.io/zone
+      whenUnsatisfiable: ScheduleAnyway
+      labelSelector:
+        matchLabels:
+          app.kubernetes.io/instance: mariadb-galera
+---
+apiVersion: k8s.mariadb.com/v1alpha1
+kind: MaxScale
+metadata:
+  name: mariadb-maxscale
+  namespace: data-tier
+spec:
+  replicas: 1
+  mariaDbRef:
+    name: mariadb-galera
+  services:
+    - name: rw-router
+      router: readconnroute
+      params:
+        router_options: "master"
+      listener:
+        port: 3306
+        protocol: MariaDBProtocol
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 250m
+      memory: 256Mi
+---
+apiVersion: k8s.mariadb.com/v1alpha1
+kind: SqlJob
+metadata:
+  name: mariadb-catalog-init
+  namespace: data-tier
+spec:
+  mariaDbRef:
+    name: mariadb-galera
+  database: store
+  username: root
+  passwordSecretKeyRef:
+    name: mariadb-secret
+    key: root-password
+  sql: |
+    CREATE TABLE IF NOT EXISTS products (
+        id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+        sku VARCHAR(32) NOT NULL UNIQUE,
+        name VARCHAR(120) NOT NULL,
+        description VARCHAR(500) NOT NULL,
+        price DECIMAL(10, 2) NOT NULL,
+        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        CHECK (price >= 0)
+    );
+
+    INSERT IGNORE INTO products (sku, name, description, price) VALUES
+        ('ST-001', 'Cotton Tote Bag', 'Reusable natural cotton shopping bag.', 3.49),
+        ('ST-002', 'Wooden Pencil Set', 'Pack of six graphite pencils.', 4.25),
+        ('ST-003', 'Ceramic Mug', 'Everyday 350 ml stoneware mug.', 5.99),
+        ('ST-004', 'Pocket Notebook', 'A6 ruled notebook with 96 pages.', 6.50),
+        ('ST-005', 'Stainless Water Bottle', 'Reusable 500 ml bottle.', 8.75),
+        ('ST-006', 'Canvas Apron', 'Durable cotton canvas kitchen apron.', 11.25),
+        ('ST-007', 'Desk Plant', 'Small low-maintenance indoor plant.', 12.99),
+        ('ST-008', 'Wool Blend Scarf', 'Soft midweight scarf for cool weather.', 15.50),
+        ('ST-009', 'Insulated Lunch Box', 'Compact lunch box with thermal lining.', 18.00),
+        ('ST-010', 'Wireless Mouse', 'Compact wireless mouse with USB receiver.', 21.99),
+        ('ST-011', 'Table Lamp', 'Adjustable LED desk lamp.', 28.50),
+        ('ST-012', 'Travel Backpack', 'Lightweight 20-liter day backpack.', 39.95);

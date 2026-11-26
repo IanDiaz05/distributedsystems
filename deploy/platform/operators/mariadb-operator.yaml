@@ -1,0 +1,91 @@
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: mariadb-operator
+  namespace: platform-system
+spec:
+  interval: 1h
+  url: https://helm.mariadb.com/mariadb-operator
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: mariadb-operator-crds
+  namespace: platform-system
+spec:
+  interval: 30m
+  timeout: 10m
+  targetNamespace: platform-system
+  chart:
+    spec:
+      chart: mariadb-operator-crds
+      version: "26.10.2"
+      interval: 1h
+      sourceRef:
+        kind: HelmRepository
+        name: mariadb-operator
+        namespace: platform-system
+  install:
+    crds: CreateReplace
+  upgrade:
+    crds: CreateReplace
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: mariadb-operator
+  namespace: platform-system
+spec:
+  interval: 30m
+  timeout: 10m
+  targetNamespace: platform-system
+  dependsOn:
+    - name: mariadb-operator-crds
+      namespace: platform-system
+  chart:
+    spec:
+      chart: mariadb-operator
+      version: "26.10.2"
+      interval: 1h
+      sourceRef:
+        kind: HelmRepository
+        name: mariadb-operator
+        namespace: platform-system
+  install:
+    crds: CreateReplace
+  upgrade:
+    crds: CreateReplace
+  values:
+    crds:
+      enabled: false
+    currentNamespaceOnly: false
+    resources:
+      requests:
+        cpu: 25m
+        memory: 128Mi
+      limits:
+        cpu: 250m
+        memory: 256Mi
+    # Operators install before cert-manager; use the built-in cert-controller
+    # so admission webhooks are ready without a cert-manager chicken-and-egg.
+    webhook:
+      enabled: true
+      cert:
+        certManager:
+          enabled: false
+      resources:
+        requests:
+          cpu: 25m
+          memory: 64Mi
+        limits:
+          cpu: 150m
+          memory: 128Mi
+    certController:
+      enabled: true
+      resources:
+        requests:
+          cpu: 25m
+          memory: 64Mi
+        limits:
+          cpu: 150m
+          memory: 128Mi

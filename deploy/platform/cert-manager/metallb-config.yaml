@@ -1,0 +1,17 @@
+apiVersion: metallb.io/v1beta1
+kind: IPAddressPool
+metadata:
+  name: store-dev-pool
+  namespace: platform-system
+spec:
+  addresses:
+    - 192.168.49.80-192.168.49.90
+---
+apiVersion: metallb.io/v1beta1
+kind: L2Advertisement
+metadata:
+  name: store-dev-l2
+  namespace: platform-system
+spec:
+  ipAddressPools:
+    - store-dev-pool

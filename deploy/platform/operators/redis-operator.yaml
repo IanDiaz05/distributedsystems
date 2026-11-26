@@ -1,0 +1,39 @@
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: redis-operator
+  namespace: platform-system
+spec:
+  interval: 1h
+  url: https://spotahome.github.io/redis-operator
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: redis-operator
+  namespace: platform-system
+spec:
+  interval: 30m
+  timeout: 10m
+  targetNamespace: platform-system
+  chart:
+    spec:
+      chart: redis-operator
+      version: "3.3.0"
+      interval: 1h
+      sourceRef:
+        kind: HelmRepository
+        name: redis-operator
+        namespace: platform-system
+  install:
+    crds: CreateReplace
+  upgrade:
+    crds: CreateReplace
+  values:
+    resources:
+      requests:
+        cpu: 25m
+        memory: 64Mi
+      limits:
+        cpu: 100m
+        memory: 128Mi

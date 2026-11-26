@@ -1,0 +1,166 @@
+apiVersion: mongodbcommunity.mongodb.com/v1
+kind: MongoDBCommunity
+metadata:
+  name: store-rs
+  namespace: data-tier
+spec:
+  members: 3
+  type: ReplicaSet
+  version: "8.0.4"
+  security:
+    authentication:
+      modes:
+        - SCRAM
+  users:
+    - name: store_admin
+      db: admin
+      passwordSecretRef:
+        name: mongodb-secret
+        key: root-password
+      roles:
+        - name: root
+          db: admin
+      scramCredentialsSecretName: store-admin-scram
+    - name: store_reviews_app
+      db: admin
+      passwordSecretRef:
+        name: mongodb-secret
+        key: app-password
+      roles:
+        - name: readWrite
+          db: store_reviews
+      scramCredentialsSecretName: store-reviews-app-scram
+  statefulSet:
+    spec:
+      volumeClaimTemplates:
+        - metadata:
+            name: data-volume
+          spec:
+            accessModes:
+              - ReadWriteOnce
+            storageClassName: store-replicated
+            resources:
+              requests:
+                storage: 2Gi
+        - metadata:
+            name: logs-volume
+          spec:
+            accessModes:
+              - ReadWriteOnce
+            storageClassName: store-replicated
+            resources:
+              requests:
+                storage: 512Mi
+      template:
+        spec:
+          containers:
+            - name: mongod
+              resources:
+                requests:
+                  cpu: 100m
+                  memory: 256Mi
+                limits:
+                  cpu: 500m
+                  memory: 512Mi
+            - name: mongodb-agent
+              resources:
+                requests:
+                  cpu: 25m
+                  memory: 64Mi
+                limits:
+                  cpu: 200m
+                  memory: 128Mi
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: mongodb-reviews-init
+  namespace: data-tier
+spec:
+  backoffLimit: 12
+  ttlSecondsAfterFinished: 86400
+  template:
+    spec:
+      restartPolicy: OnFailure
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 999
+        fsGroup: 999
+        seccompProfile:
+          type: RuntimeDefault
+      volumes:
+        - name: tmp
+          emptyDir: {}
+      containers:
+        - name: init
+          image: mongo:8
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 999
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            seccompProfile:
+              type: RuntimeDefault
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+          env:
+            - name: MONGO_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mongodb-secret
+                  key: root-password
+          command:
+            - bash
+            - -c
+            - |
+              set -euo pipefail
+              URI="mongodb://store_admin:${MONGO_ROOT_PASSWORD}@store-rs-0.store-rs-svc.data-tier.svc.cluster.local:27017,store-rs-1.store-rs-svc.data-tier.svc.cluster.local:27017,store-rs-2.store-rs-svc.data-tier.svc.cluster.local:27017/store_reviews?replicaSet=store-rs&authSource=admin"
+              echo "waiting for store-rs primary"
+              for attempt in $(seq 1 60); do
+                if mongosh "${URI}" --quiet --eval 'quit(db.hello().isWritablePrimary === true ? 0 : 1)'; then
+                  break
+                fi
+                if [ "${attempt}" -eq 60 ]; then
+                  echo "store-rs primary was not elected in time"
+                  exit 1
+                fi
+                sleep 5
+              done
+              mongosh "${URI}" --quiet --eval '
+                const reviews = db.getSiblingDB("store_reviews").product_reviews;
+                reviews.createIndex({ sku: 1, createdAt: -1 });
+                reviews.updateOne(
+                  { sampleId: "sample-st-001" },
+                  {
+                    $setOnInsert: {
+                      sampleId: "sample-st-001",
+                      sku: "ST-001",
+                      reviewer: "Alex",
+                      rating: 5,
+                      comment: "Sturdy and convenient for grocery shopping.",
+                      createdAt: new Date("2025-01-15T12:00:00.000Z"),
+                    },
+                  },
+                  { upsert: true },
+                );
+                reviews.updateOne(
+                  { sampleId: "sample-st-003" },
+                  {
+                    $setOnInsert: {
+                      sampleId: "sample-st-003",
+                      sku: "ST-003",
+                      reviewer: "Sam",
+                      rating: 4,
+                      comment: "A comfortable everyday mug.",
+                      createdAt: new Date("2025-01-16T12:00:00.000Z"),
+                    },
+                  },
+                  { upsert: true },
+                );
+                reviews.createIndex({ sampleId: 1 }, { unique: true, sparse: true });
+              '
+              echo "product reviews initialized"
