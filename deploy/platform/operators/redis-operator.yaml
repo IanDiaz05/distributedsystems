@@ -30,6 +30,11 @@ spec:
   upgrade:
     crds: Skip
   values:
+    # Chart 3.3.0 defaults to quay.io/spotahome/redis-operator:v1.3.0, which is not published.
+    image:
+      repository: quay.io/spotahome/redis-operator
+      tag: v1.2.4
+      pullPolicy: IfNotPresent
     resources:
       requests:
         cpu: 25m
