@@ -7,6 +7,14 @@ spec:
   replicas: 3
   galera:
     enabled: true
+    initJob:
+      resources:
+        requests:
+          cpu: 100m
+          memory: 256Mi
+        limits:
+          cpu: 500m
+          memory: 512Mi
   storage:
     size: 2Gi
     storageClassName: store-replicated
@@ -29,13 +37,20 @@ spec:
     limits:
       cpu: 500m
       memory: 512Mi
-  topologySpreadConstraints:
-    - maxSkew: 1
-      topologyKey: topology.kubernetes.io/zone
-      whenUnsatisfiable: ScheduleAnyway
-      labelSelector:
-        matchLabels:
-          app.kubernetes.io/instance: mariadb-galera
+  podSecurityContext:
+    fsGroup: 999
+    runAsGroup: 999
+    runAsNonRoot: true
+    runAsUser: 999
+    seccompProfile:
+      type: RuntimeDefault
+  securityContext:
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+        - ALL
+    runAsNonRoot: true
+    runAsUser: 999
 ---
 apiVersion: k8s.mariadb.com/v1alpha1
 kind: MaxScale
@@ -61,6 +76,16 @@ spec:
     limits:
       cpu: 250m
       memory: 256Mi
+  podSecurityContext:
+    runAsNonRoot: true
+    seccompProfile:
+      type: RuntimeDefault
+  securityContext:
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+        - ALL
+    runAsNonRoot: true
 ---
 apiVersion: k8s.mariadb.com/v1alpha1
 kind: SqlJob
